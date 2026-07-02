@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; skip queued runs in favour of the latest.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Backend API. Override by setting a repository Variable of the same name
+      # (Settings → Secrets and variables → Actions → Variables).
+      NEXT_PUBLIC_API_BASE_URL: ${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://radar-kleszczy-api.onrender.com' }}
+      # Cloudflare Turnstile site key. Defaults to Cloudflare's always-pass test
+      # key; set a repository Variable with your real key for production.
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build static export
+        # Project pages live at /<repo>, so the app must be built with that
+        # basePath. For a user page (<user>.github.io) or a custom domain served
+        # from the root, set the repo Variable USE_ROOT_BASE_PATH=true.
+        run: |
+          if [ "${{ vars.USE_ROOT_BASE_PATH }}" = "true" ]; then
+            export NEXT_PUBLIC_BASE_PATH=""
+          else
+            export NEXT_PUBLIC_BASE_PATH="/${GITHUB_REPOSITORY#*/}"
+          fi
+          echo "Building with basePath='$NEXT_PUBLIC_BASE_PATH'"
+          npm run build
+          touch out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

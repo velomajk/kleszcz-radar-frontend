@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #ece7dc;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Hidden scrollbars for horizontal filter rows, matching the design. */
+.rk-scroll {
+  scrollbar-width: none;
+}
+.rk-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* MapLibre stylesheet is imported in the map component. Minimal overrides: */
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+@layer utilities {
+  .animate-fade {
+    animation: rkFade 0.3s ease both;
+  }
+}

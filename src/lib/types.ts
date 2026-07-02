@@ -1,0 +1,124 @@
+/**
+ * API contract types, derived directly from the backend
+ * (velomajk/kleszcz-radar-backend, src/lib/validation.ts + services/*).
+ * These mirror the real request bodies and response shapes — nothing invented.
+ */
+
+// ---- Enums (exact backend values) ----
+
+export type PlaceType =
+  | "forest"
+  | "meadow"
+  | "park"
+  | "garden"
+  | "allotment"
+  | "urban"
+  | "other";
+
+export type SubjectType = "adult" | "child" | "animal";
+
+export type RemovalMethod =
+  | "tweezers"
+  | "tick_tool"
+  | "fingers"
+  | "professional"
+  | "other"
+  | "unknown";
+
+export type HeatmapWindow = "7d" | "14d" | "30d" | "season";
+
+export type Intensity = "low" | "medium" | "high";
+
+// ---- POST /v1/report-verifications ----
+
+export interface ReportVerificationInput {
+  email: string;
+  turnstileToken: string;
+  latitude: number; // -90..90
+  longitude: number; // -180..180
+  occurredOn: string; // YYYY-MM-DD, not in the future
+  placeType: PlaceType;
+  subjectType: SubjectType;
+  tickRemoved: boolean;
+  removalMethod?: RemovalMethod; // only valid when tickRemoved === true
+  estimatedAttachmentHours?: number; // 0..720
+}
+
+export interface ReportVerificationResponse {
+  status: "verification_sent";
+  expiresInSeconds: number;
+}
+
+// ---- POST /v1/report-verifications/confirm ----
+
+export interface ConfirmResponse {
+  status: "report_created";
+  symptomUrl: string;
+  symptomLinkExpiresAt: string; // ISO
+}
+
+// ---- GET /v1/symptoms/status (header X-Symptom-Token) ----
+
+export interface SymptomStatusResponse {
+  valid: boolean;
+  expiresAt: string; // ISO
+  submitted: boolean;
+  lastUpdatedAt: string | null;
+}
+
+// ---- PUT /v1/symptoms (header X-Symptom-Token) ----
+
+export interface SymptomInput {
+  rash: boolean;
+  expandingRash: boolean;
+  fever: boolean;
+  headache: boolean;
+  muscleOrJointPain: boolean;
+  neckStiffness: boolean;
+  nauseaOrVomiting: boolean;
+  neurologicalSymptoms: boolean;
+  doctorContacted: boolean;
+  observedAt: string; // ISO datetime, not in the future
+}
+
+export interface SymptomSubmitResponse {
+  status: "symptoms_saved";
+  disclaimer: string;
+}
+
+// ---- GET /v1/heatmap ----
+
+export interface HeatmapQuery {
+  window?: HeatmapWindow;
+  placeType?: PlaceType;
+  subjectType?: SubjectType;
+  // Optional bounding box — all four must be provided together.
+  north?: number;
+  south?: number;
+  east?: number;
+  west?: number;
+}
+
+export interface HeatmapCell {
+  cell: string; // H3 index (resolution 7)
+  countBucket: number; // bucketed count (multiples of 5)
+  intensity: Intensity;
+}
+
+export interface HeatmapResponse {
+  generatedAt: string; // ISO
+  window: HeatmapWindow;
+  resolution: number; // 7
+  minimumCellCount: number; // suppression threshold k
+  cells: HeatmapCell[];
+}
+
+// ---- Error envelope (stable across all endpoints) ----
+
+export interface ApiErrorBody {
+  error: {
+    code: string;
+    message: string;
+    details?: Array<{ path: (string | number)[]; message: string }>;
+  };
+}
