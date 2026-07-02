@@ -22,14 +22,18 @@ export function LocationPicker({
   const markerRef = useRef<Marker | null>(null);
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
+  // Initial view only — the map must be created exactly once, not on every
+  // `value` change (recreating it on each tap reloads all tiles).
+  const initialValueRef = useRef(value);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    const initial = initialValueRef.current;
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: osmStyle,
-      center: value ? [value.lng, value.lat] : POLAND_CENTER,
-      zoom: value ? 11 : POLAND_ZOOM,
+      center: initial ? [initial.lng, initial.lat] : POLAND_CENTER,
+      zoom: initial ? 11 : POLAND_ZOOM,
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
@@ -43,7 +47,7 @@ export function LocationPicker({
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, [value]);
+  }, []);
 
   // Reflect the selected value as a draggable marker.
   useEffect(() => {

@@ -20,9 +20,11 @@ export const metadata: Metadata = {
   title: "Radar Kleszczy — anonimowe zgłoszenia i mapa ryzyka",
   description:
     "Anonimowo zgłoś ukłucie kleszcza i sprawdź zagregowaną mapę ryzyka w Polsce. Bez konta, bez publikowania dokładnej lokalizacji.",
-  // Never leak the private symptom token via the Referer header (static-export
-  // friendly replacement for a server-set Referrer-Policy header).
-  referrer: "no-referrer",
+  // Cross-origin requests send only the bare origin — never the path/query, so
+  // private symptom & magic-link tokens can't leak via Referer. A full
+  // `no-referrer` is NOT usable here: tile.openstreetmap.org rejects requests
+  // without a Referer (OSMF tile usage policy), which blanks out both maps.
+  referrer: "strict-origin-when-cross-origin",
 };
 
 export const viewport: Viewport = {
