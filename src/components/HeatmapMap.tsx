@@ -2,13 +2,16 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
-import maplibregl, { type Map as MlMap, LngLatBounds } from "maplibre-gl";
+import maplibregl, { type Map as MlMap, type Marker, LngLatBounds } from "maplibre-gl";
 import { cellToBoundary } from "h3-js";
 import type { FeatureCollection, Polygon } from "geojson";
 import { osmStyle, POLAND_CENTER, POLAND_ZOOM } from "@/lib/mapStyle";
+import { COUNTRY_CENTROIDS } from "@/lib/countryCentroids";
 import type { HeatmapCell } from "@/lib/types";
 
 const SOURCE_ID = "risk-cells";
+/** Below this zoom the map shows per-country count badges. */
+const COUNTRY_BADGE_MAX_ZOOM = 4.5;
 
 function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
   return {
@@ -29,9 +32,12 @@ function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
 /** Renders aggregated H3 risk cells as coloured hexagons. Never any point pins. */
 export function HeatmapMap({
   cells,
+  countries = [],
   onZoomChange,
 }: {
   cells: HeatmapCell[];
+  /** Per-country totals, rendered as badges when zoomed out beyond Poland. */
+  countries?: { country: string; count: number }[];
   /** Called with the map zoom on load and after every zoom gesture. */
   onZoomChange?: (zoom: number) => void;
 }) {
@@ -39,8 +45,31 @@ export function HeatmapMap({
   const mapRef = useRef<MlMap | null>(null);
   const loadedRef = useRef(false);
   const didFitRef = useRef(false);
+  const countryMarkersRef = useRef<Marker[]>([]);
+  const countriesRef = useRef(countries);
+  countriesRef.current = countries;
   const onZoomChangeRef = useRef(onZoomChange);
   onZoomChangeRef.current = onZoomChange;
+
+  /** (Re)creates or removes badges depending on current zoom. */
+  const syncCountryBadges = (map: MlMap) => {
+    countryMarkersRef.current.forEach((m) => m.remove());
+    countryMarkersRef.current = [];
+    if (map.getZoom() >= COUNTRY_BADGE_MAX_ZOOM) return;
+    for (const { country, count } of countriesRef.current) {
+      const centroid = COUNTRY_CENTROIDS[country];
+      if (!centroid || count <= 0) continue;
+      const el = document.createElement("div");
+      el.style.cssText =
+        "background:#14584A;color:#fff;border-radius:999px;padding:4px 10px;" +
+        "font:700 12px/1.2 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.25);" +
+        "white-space:nowrap;pointer-events:none;";
+      el.textContent = `${country} · ${count.toLocaleString("pl-PL")}`;
+      countryMarkersRef.current.push(
+        new maplibregl.Marker({ element: el }).setLngLat(centroid).addTo(map),
+      );
+    }
+  };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -52,9 +81,13 @@ export function HeatmapMap({
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.on("zoomend", () => onZoomChangeRef.current?.(map.getZoom()));
+    map.on("zoomend", () => {
+      onZoomChangeRef.current?.(map.getZoom());
+      syncCountryBadges(map);
+    });
     map.on("load", () => {
       onZoomChangeRef.current?.(map.getZoom());
+      syncCountryBadges(map);
       map.addSource(SOURCE_ID, {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -140,6 +173,12 @@ export function HeatmapMap({
     const map = mapRef.current;
     if (map && loadedRef.current) updateData(map, cells, didFitRef);
   }, [cells]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && loadedRef.current) syncCountryBadges(map);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countries]);
 
   return (
     <div

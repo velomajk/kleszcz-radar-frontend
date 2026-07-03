@@ -191,6 +191,7 @@ export default function HeatmapPage() {
         <div className="relative mx-4 h-[300px] overflow-hidden rounded-[18px] border border-map-border bg-map-bg">
           <HeatmapMap
             cells={data?.cells ?? []}
+            countries={data?.countries ?? []}
             onZoomChange={(zoom) => setResolution(zoomToResolution(zoom))}
           />
 

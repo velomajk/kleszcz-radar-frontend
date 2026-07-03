@@ -119,6 +119,9 @@ export interface HeatmapResponse {
   matchingReports?: number; // reports matching filters/window, before the per-cell threshold
   totalReports?: number; // all visible reports, country-wide (unfiltered)
   reportsLast24h?: number; // of those, submitted in the last 24 hours
+  // Per-country totals under the current filters (no per-cell threshold —
+  // national aggregates are privacy-safe). Shown as badges at low zoom.
+  countries?: { country: string; count: number }[];
   cells: HeatmapCell[];
 }
 
