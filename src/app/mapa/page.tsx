@@ -81,6 +81,10 @@ function emptyMapMessage(data: HeatmapResponse): string {
     return "Żadne zgłoszenie nie pasuje do wybranych filtrów lub okresu. Zmień filtry, aby zobaczyć dane.";
   }
   const n = data.matchingReports;
+  if (typeof n !== "number") {
+    // Older backend without `matchingReports` — fall back to the generic copy.
+    return "Za mało zgłoszeń w tym widoku, aby bezpiecznie pokazać dane. Obszary poniżej progu prywatności są ukrywane.";
+  }
   const d = n % 10;
   const h = n % 100;
   const phrase =
@@ -285,10 +289,10 @@ export default function HeatmapPage() {
                   ? `Ostatnia aktualizacja: ${relativeTime(data.generatedAt)} · próg prywatności: ${data.minimumCellCount}`
                   : "Wczytywanie danych…"}
               </div>
-              {data ? (
+              {data && typeof data.totalReports === "number" ? (
                 <div className="mt-1.5 flex items-center gap-2 px-0.5 text-[12.5px] text-faint">
                   <InfoIcon size={14} className="text-hint" />
-                  {`Zgłoszono ${data.totalReports.toLocaleString("pl-PL")} ${kleszczeForm(data.totalReports)} (${data.reportsLast24h.toLocaleString("pl-PL")} w ostatnich 24 h)`}
+                  {`Zgłoszono ${data.totalReports.toLocaleString("pl-PL")} ${kleszczeForm(data.totalReports)} (${(data.reportsLast24h ?? 0).toLocaleString("pl-PL")} w ostatnich 24 h)`}
                 </div>
               ) : null}
 
