@@ -31,5 +31,14 @@ export const osmStyle: StyleSpecification = {
 
 /** Roughly centres the map on Poland. */
 export const POLAND_CENTER: [number, number] = [19.14, 52.0];
-/** Opens wide enough to see all of Poland plus neighbours (country-badge band). */
+/** Opens wide enough to see all of Poland plus neighbours. */
 export const POLAND_ZOOM = 4.8;
+
+/**
+ * Badge tiers:
+ *   zoom <  4           → country badges (Europe-scale view: "PL · N")
+ *   4 ≤ zoom < 8        → voivodeship badges (incl. default whole-Poland view)
+ *   zoom ≥ 8            → hexagons only
+ */
+export const COUNTRY_BADGE_MAX_ZOOM = 4;
+export const REGION_BADGE_MAX_ZOOM = 8;

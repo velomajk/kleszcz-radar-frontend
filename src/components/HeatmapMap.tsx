@@ -5,20 +5,18 @@ import { useEffect, useRef } from "react";
 import maplibregl, { type Map as MlMap, type Marker, LngLatBounds } from "maplibre-gl";
 import { cellToBoundary } from "h3-js";
 import type { FeatureCollection, Polygon } from "geojson";
-import { osmStyle, POLAND_CENTER, POLAND_ZOOM } from "@/lib/mapStyle";
+import {
+  osmStyle,
+  POLAND_CENTER,
+  POLAND_ZOOM,
+  COUNTRY_BADGE_MAX_ZOOM,
+  REGION_BADGE_MAX_ZOOM,
+} from "@/lib/mapStyle";
 import { COUNTRY_CENTROIDS } from "@/lib/countryCentroids";
 import { REGION_CENTROIDS } from "@/lib/regionCentroids";
 import type { HeatmapCell } from "@/lib/types";
 
 const SOURCE_ID = "risk-cells";
-/**
- * Badge tiers (keep in sync with `zoomToResolution` in mapa/page.tsx):
- *   zoom <  6           → country badges (default whole-country view)
- *   6 ≤ zoom < 8        → voivodeship badges
- *   zoom ≥ 8            → hexagons only
- */
-export const COUNTRY_BADGE_MAX_ZOOM = 6;
-export const REGION_BADGE_MAX_ZOOM = 8;
 
 function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
   return {

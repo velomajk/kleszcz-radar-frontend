@@ -12,6 +12,7 @@ import {
   SpinnerIcon,
 } from "@/components/icons";
 import { getHeatmap, polishErrorMessage } from "@/lib/api";
+import { POLAND_ZOOM, COUNTRY_BADGE_MAX_ZOOM, REGION_BADGE_MAX_ZOOM } from "@/lib/mapStyle";
 import type {
   HeatmapResponse,
   HeatmapWindow,
@@ -125,7 +126,8 @@ export default function HeatmapPage() {
   const [window_, setWindow] = useState<HeatmapWindow>("7d");
   const [place, setPlace] = useState<PlaceType | "all">("all");
   const [who, setWho] = useState<SubjectType | "all">("all");
-  const [resolution, setResolution] = useState(zoomToResolution(5.4));
+  const [resolution, setResolution] = useState(zoomToResolution(POLAND_ZOOM));
+  const [zoom, setZoom] = useState(POLAND_ZOOM);
 
   const [data, setData] = useState<HeatmapResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,12 +165,13 @@ export default function HeatmapPage() {
   }, [data]);
 
   const hasCells = (data?.cells.length ?? 0) > 0;
-  // Badges (country tier at res 3, voivodeship tier at res 4–5) count as
-  // displayed data — while they're shown the "nothing to display" message
-  // would be false.
+  // Badges count as displayed data — while a badge tier is shown the
+  // "nothing to display" message would be false.
   const badgesVisible =
-    (resolution === 3 && (data?.countries?.some((c) => c.count > 0) ?? false)) ||
-    (resolution >= 4 && resolution <= 5 && (data?.regions?.some((r) => r.count > 0) ?? false));
+    (zoom < COUNTRY_BADGE_MAX_ZOOM && (data?.countries?.some((c) => c.count > 0) ?? false)) ||
+    (zoom >= COUNTRY_BADGE_MAX_ZOOM &&
+      zoom < REGION_BADGE_MAX_ZOOM &&
+      (data?.regions?.some((r) => r.count > 0) ?? false));
 
   return (
     <AppShell>
@@ -200,7 +203,10 @@ export default function HeatmapPage() {
             cells={data?.cells ?? []}
             countries={data?.countries ?? []}
             regions={data?.regions ?? []}
-            onZoomChange={(zoom) => setResolution(zoomToResolution(zoom))}
+            onZoomChange={(z) => {
+              setZoom(z);
+              setResolution(zoomToResolution(z));
+            }}
           />
 
           <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-full bg-white/85 px-[11px] py-[5px] text-[11.5px] font-semibold text-[#4A574F]">
