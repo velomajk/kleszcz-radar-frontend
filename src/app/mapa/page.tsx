@@ -72,6 +72,15 @@ const WINDOW_RANGE_LABEL: Record<HeatmapWindow, string> = {
   season: "cały sezon " + new Date().getFullYear(),
 };
 
+/** Polish plural form for "kleszcz" after a number. */
+function kleszczeForm(n: number): string {
+  if (n === 1) return "kleszcza";
+  const d = n % 10;
+  const h = n % 100;
+  if (d >= 2 && d <= 4 && !(h >= 12 && h <= 14)) return "kleszcze";
+  return "kleszczy";
+}
+
 function relativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const min = Math.round(diffMs / 60000);
@@ -254,6 +263,12 @@ export default function HeatmapPage() {
                   ? `Ostatnia aktualizacja: ${relativeTime(data.generatedAt)} · próg prywatności: ${data.minimumCellCount}`
                   : "Wczytywanie danych…"}
               </div>
+              {data ? (
+                <div className="mt-1.5 flex items-center gap-2 px-0.5 text-[12.5px] text-faint">
+                  <InfoIcon size={14} className="text-hint" />
+                  {`Zgłoszono ${data.totalReports.toLocaleString("pl-PL")} ${kleszczeForm(data.totalReports)} (${data.reportsLast24h.toLocaleString("pl-PL")} w ostatnich 24 h)`}
+                </div>
+              ) : null}
 
               <Callout
                 tone="neutral"
