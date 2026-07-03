@@ -163,10 +163,12 @@ export default function HeatmapPage() {
   }, [data]);
 
   const hasCells = (data?.cells.length ?? 0) > 0;
-  // Country badges are visible on the coarsest zoom band; while they're shown
-  // the "nothing to display" message would be false — the badges ARE the data.
+  // Badges (country tier at res 3, voivodeship tier at res 4–5) count as
+  // displayed data — while they're shown the "nothing to display" message
+  // would be false.
   const badgesVisible =
-    resolution === 3 && (data?.countries?.some((c) => c.count > 0) ?? false);
+    (resolution === 3 && (data?.countries?.some((c) => c.count > 0) ?? false)) ||
+    (resolution >= 4 && resolution <= 5 && (data?.regions?.some((r) => r.count > 0) ?? false));
 
   return (
     <AppShell>
@@ -197,6 +199,7 @@ export default function HeatmapPage() {
           <HeatmapMap
             cells={data?.cells ?? []}
             countries={data?.countries ?? []}
+            regions={data?.regions ?? []}
             onZoomChange={(zoom) => setResolution(zoomToResolution(zoom))}
           />
 

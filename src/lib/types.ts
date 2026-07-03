@@ -122,6 +122,8 @@ export interface HeatmapResponse {
   // Per-country totals under the current filters (no per-cell threshold —
   // national aggregates are privacy-safe). Shown as badges at low zoom.
   countries?: { country: string; count: number }[];
+  // Per-voivodeship totals (PL only), shown as badges at regional zoom.
+  regions?: { region: string; count: number }[];
   cells: HeatmapCell[];
 }
 

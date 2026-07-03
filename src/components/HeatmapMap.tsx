@@ -7,15 +7,18 @@ import { cellToBoundary } from "h3-js";
 import type { FeatureCollection, Polygon } from "geojson";
 import { osmStyle, POLAND_CENTER, POLAND_ZOOM } from "@/lib/mapStyle";
 import { COUNTRY_CENTROIDS } from "@/lib/countryCentroids";
+import { REGION_CENTROIDS } from "@/lib/regionCentroids";
 import type { HeatmapCell } from "@/lib/types";
 
 const SOURCE_ID = "risk-cells";
 /**
- * Below this zoom the map shows per-country count badges. Keep in sync with
- * the coarsest band of `zoomToResolution` in mapa/page.tsx (zoom < 6 → res 3),
- * so the badges appear on the default whole-country view.
+ * Badge tiers (keep in sync with `zoomToResolution` in mapa/page.tsx):
+ *   zoom <  6           → country badges (default whole-country view)
+ *   6 ≤ zoom < 8        → voivodeship badges
+ *   zoom ≥ 8            → hexagons only
  */
 export const COUNTRY_BADGE_MAX_ZOOM = 6;
+export const REGION_BADGE_MAX_ZOOM = 8;
 
 function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
   return {
@@ -37,11 +40,14 @@ function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
 export function HeatmapMap({
   cells,
   countries = [],
+  regions = [],
   onZoomChange,
 }: {
   cells: HeatmapCell[];
   /** Per-country totals, rendered as badges when zoomed out beyond Poland. */
   countries?: { country: string; count: number }[];
+  /** Per-voivodeship totals, rendered as badges at regional zoom. */
+  regions?: { region: string; count: number }[];
   /** Called with the map zoom on load and after every zoom gesture. */
   onZoomChange?: (zoom: number) => void;
 }) {
@@ -49,27 +55,44 @@ export function HeatmapMap({
   const mapRef = useRef<MlMap | null>(null);
   const loadedRef = useRef(false);
   const didFitRef = useRef(false);
-  const countryMarkersRef = useRef<Marker[]>([]);
+  const badgeMarkersRef = useRef<Marker[]>([]);
   const countriesRef = useRef(countries);
   countriesRef.current = countries;
+  const regionsRef = useRef(regions);
+  regionsRef.current = regions;
   const onZoomChangeRef = useRef(onZoomChange);
   onZoomChangeRef.current = onZoomChange;
 
-  /** (Re)creates or removes badges depending on current zoom. */
+  /** (Re)creates or removes count badges for the tier matching current zoom. */
   const syncCountryBadges = (map: MlMap) => {
-    countryMarkersRef.current.forEach((m) => m.remove());
-    countryMarkersRef.current = [];
-    if (map.getZoom() >= COUNTRY_BADGE_MAX_ZOOM) return;
-    for (const { country, count } of countriesRef.current) {
-      const centroid = COUNTRY_CENTROIDS[country];
+    badgeMarkersRef.current.forEach((m) => m.remove());
+    badgeMarkersRef.current = [];
+    const zoom = map.getZoom();
+    let entries: Array<{ label: string; centroid: [number, number] | undefined; count: number }>;
+    if (zoom < COUNTRY_BADGE_MAX_ZOOM) {
+      entries = countriesRef.current.map(({ country, count }) => ({
+        label: country,
+        centroid: COUNTRY_CENTROIDS[country],
+        count,
+      }));
+    } else if (zoom < REGION_BADGE_MAX_ZOOM) {
+      entries = regionsRef.current.map(({ region, count }) => ({
+        label: region,
+        centroid: REGION_CENTROIDS[region],
+        count,
+      }));
+    } else {
+      return;
+    }
+    for (const { label, centroid, count } of entries) {
       if (!centroid || count <= 0) continue;
       const el = document.createElement("div");
       el.style.cssText =
         "background:#14584A;color:#fff;border-radius:999px;padding:4px 10px;" +
         "font:700 12px/1.2 system-ui,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.25);" +
         "white-space:nowrap;pointer-events:none;";
-      el.textContent = `${country} · ${count.toLocaleString("pl-PL")}`;
-      countryMarkersRef.current.push(
+      el.textContent = `${label} · ${count.toLocaleString("pl-PL")}`;
+      badgeMarkersRef.current.push(
         new maplibregl.Marker({ element: el }).setLngLat(centroid).addTo(map),
       );
     }
@@ -182,7 +205,7 @@ export function HeatmapMap({
     const map = mapRef.current;
     if (map && loadedRef.current) syncCountryBadges(map);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [countries]);
+  }, [countries, regions]);
 
   return (
     <div
