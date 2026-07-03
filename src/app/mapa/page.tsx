@@ -59,10 +59,11 @@ const WHO_FILTERS: { key: SubjectType | "all"; label: string }[] = [
  * own limits).
  */
 function zoomToResolution(zoom: number): number {
-  if (zoom < 6) return 4; // whole country
-  if (zoom < 7.5) return 5; // województwo
-  if (zoom < 9) return 6; // powiat
-  return 7; // local (native storage resolution)
+  if (zoom < 6) return 3; // whole country (~12,400 km² cells, ⅔ województwa)
+  if (zoom < 7) return 4; // region (~1,770 km²)
+  if (zoom < 8) return 5; // powiat (~253 km²)
+  if (zoom < 9) return 6; // gmina (~36 km²)
+  return 7; // local (native storage resolution, ~5 km²)
 }
 
 const WINDOW_RANGE_LABEL: Record<HeatmapWindow, string> = {
