@@ -104,7 +104,15 @@ export function HeatmapMap({ cells }: { cells: HeatmapCell[] }) {
     if (map && loadedRef.current) updateData(map, cells);
   }, [cells]);
 
-  return <div ref={containerRef} className="absolute inset-0" />;
+  return (
+    <div
+      ref={containerRef}
+      // Inline style, not Tailwind: maplibre-gl.css sets `.maplibregl-map
+      // { position: relative }` which can win over the `.absolute` utility
+      // depending on bundle order, collapsing the container to 0 height.
+      style={{ position: "absolute", inset: 0 }}
+    />
+  );
 }
 
 function updateData(map: MlMap, cells: HeatmapCell[]) {

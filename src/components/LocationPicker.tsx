@@ -92,7 +92,10 @@ export function LocationPicker({
 
   return (
     <div className="relative h-[270px] overflow-hidden rounded-2xl border border-map-border bg-map-bg">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* Inline style, not Tailwind: maplibre-gl.css sets `.maplibregl-map
+          { position: relative }` which can win over the `.absolute` utility
+          depending on bundle order, collapsing the container to 0 height. */}
+      <div ref={containerRef} style={{ position: "absolute", inset: 0 }} />
       <button
         type="button"
         onClick={locate}
