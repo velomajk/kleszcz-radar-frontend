@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   AppShell,
@@ -21,25 +21,25 @@ import {
 import { confirmReport, polishErrorMessage } from "@/lib/api";
 import type { ConfirmResponse } from "@/lib/types";
 
-type Status = "loading" | "success" | "error" | "missing";
+type Status = "ready" | "confirming" | "success" | "error" | "missing";
 
 export function VerifyReportContent() {
   const params = useSearchParams();
   const token = params.get("token");
 
-  const [status, setStatus] = useState<Status>("loading");
+  // IMPORTANT: the token is single-use, so confirmation must NOT happen on
+  // page load — email providers (Gmail, Outlook SafeLinks, Apple Mail) prefetch
+  // and render links to scan them, which would consume the token before the
+  // person ever sees the page. A deliberate button click is required.
+  const [status, setStatus] = useState<Status>(token ? "ready" : "missing");
   const [result, setResult] = useState<ConfirmResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const firedRef = useRef(false);
 
-  useEffect(() => {
-    if (firedRef.current) return; // guard React strict-mode double effect
+  function confirm() {
+    if (firedRef.current || !token) return; // guard double clicks
     firedRef.current = true;
-
-    if (!token) {
-      setStatus("missing");
-      return;
-    }
+    setStatus("confirming");
     confirmReport(token)
       .then((res) => {
         setResult(res);
@@ -49,13 +49,36 @@ export function VerifyReportContent() {
         setErrorMsg(polishErrorMessage(err));
         setStatus("error");
       });
-  }, [token]);
+  }
 
-  if (status === "loading") {
+  if (status === "confirming") {
     return (
       <AppShell>
         <Screen>
           <LoadingState label="Potwierdzamy zgłoszenie…" />
+        </Screen>
+      </AppShell>
+    );
+  }
+
+  if (status === "ready") {
+    return (
+      <AppShell>
+        <Screen>
+          <div className="flex flex-1 flex-col items-center justify-center px-[22px] py-14 text-center">
+            <div className="mb-5 flex h-[76px] w-[76px] items-center justify-center rounded-[22px] bg-mint">
+              <CheckIcon size={34} strokeWidth={2.4} className="text-forest" />
+            </div>
+            <h1 className="mb-2.5 font-serif text-[24px] font-semibold text-ink">
+              Potwierdź swoje zgłoszenie
+            </h1>
+            <p className="max-w-[300px] text-[15px] leading-[1.55] text-muted">
+              Kliknij poniżej, aby anonimowo dodać zgłoszenie do mapy ryzyka.
+            </p>
+            <div className="mt-7 w-full">
+              <PrimaryButton onClick={confirm}>Potwierdzam zgłoszenie</PrimaryButton>
+            </div>
+          </div>
         </Screen>
       </AppShell>
     );

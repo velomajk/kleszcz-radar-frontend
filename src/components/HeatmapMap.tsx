@@ -106,6 +106,18 @@ export function HeatmapMap({
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    // "Locate me": flies to the user's position (browser asks for permission).
+    // maxZoom 10 lands where local hexagons are visible without exposing a
+    // street-level view of the user's own location.
+    map.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: false },
+        fitBoundsOptions: { maxZoom: 10 },
+        trackUserLocation: false,
+        showAccuracyCircle: false,
+      }),
+      "top-right",
+    );
     map.on("zoomend", () => {
       onZoomChangeRef.current?.(map.getZoom());
       syncCountryBadges(map);

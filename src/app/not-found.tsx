@@ -19,7 +19,9 @@ export default function NotFound() {
   >(null);
 
   useEffect(() => {
-    let path = window.location.pathname;
+    // Collapse duplicate slashes first — links built from a misconfigured
+    // base URL (e.g. "https://host//symptoms/x") should still route.
+    let path = window.location.pathname.replace(/\/{2,}/g, "/");
     if (BASE_PATH && path.startsWith(BASE_PATH)) path = path.slice(BASE_PATH.length);
     const match = path.match(/^\/symptoms\/([^/]+)\/?$/);
     if (match) {
