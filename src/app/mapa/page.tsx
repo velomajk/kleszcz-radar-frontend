@@ -162,6 +162,10 @@ export default function HeatmapPage() {
   }, [data]);
 
   const hasCells = (data?.cells.length ?? 0) > 0;
+  // Country badges are visible on the coarsest zoom band; while they're shown
+  // the "nothing to display" message would be false — the badges ARE the data.
+  const badgesVisible =
+    resolution === 3 && (data?.countries?.some((c) => c.count > 0) ?? false);
 
   return (
     <AppShell>
@@ -205,7 +209,7 @@ export default function HeatmapPage() {
             </div>
           ) : null}
 
-          {!loading && !error && !hasCells && data ? (
+          {!loading && !error && !hasCells && !badgesVisible && data ? (
             <div className="absolute inset-x-4 top-1/2 z-[1] -translate-y-1/2 rounded-xl2 bg-white/92 px-4 py-3 text-center text-[13px] font-medium leading-[1.5] text-muted shadow-sm">
               {emptyMapMessage(data)}
             </div>

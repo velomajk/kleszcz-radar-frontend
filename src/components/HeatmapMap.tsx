@@ -10,8 +10,12 @@ import { COUNTRY_CENTROIDS } from "@/lib/countryCentroids";
 import type { HeatmapCell } from "@/lib/types";
 
 const SOURCE_ID = "risk-cells";
-/** Below this zoom the map shows per-country count badges. */
-const COUNTRY_BADGE_MAX_ZOOM = 4.5;
+/**
+ * Below this zoom the map shows per-country count badges. Keep in sync with
+ * the coarsest band of `zoomToResolution` in mapa/page.tsx (zoom < 6 → res 3),
+ * so the badges appear on the default whole-country view.
+ */
+export const COUNTRY_BADGE_MAX_ZOOM = 6;
 
 function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
   return {
