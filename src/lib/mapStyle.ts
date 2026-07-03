@@ -31,4 +31,5 @@ export const osmStyle: StyleSpecification = {
 
 /** Roughly centres the map on Poland. */
 export const POLAND_CENTER: [number, number] = [19.14, 52.0];
-export const POLAND_ZOOM = 5.4;
+/** Opens wide enough to see all of Poland plus neighbours (country-badge band). */
+export const POLAND_ZOOM = 4.8;

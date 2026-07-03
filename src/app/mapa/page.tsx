@@ -95,8 +95,9 @@ function emptyMapMessage(data: HeatmapResponse): string {
         ? `są ${n.toLocaleString("pl-PL")} zgłoszenia`
         : `jest ${n.toLocaleString("pl-PL")} zgłoszeń`;
   return (
-    `W tym widoku ${phrase}, ale żaden obszar nie osiągnął progu prywatności ` +
-    `(min. ${data.minimumCellCount} zgłoszeń w jednej okolicy), więc dane pozostają ukryte.`
+    `Dla wybranych filtrów ${phrase} w całej bazie, ale żaden obszar nie osiągnął ` +
+    `progu prywatności (min. ${data.minimumCellCount} zgłoszeń w jednej okolicy), ` +
+    `więc dane pozostają ukryte.`
   );
 }
 
