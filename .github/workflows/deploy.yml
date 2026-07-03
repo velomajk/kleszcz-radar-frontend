@@ -36,14 +36,15 @@ jobs:
       - run: npm ci
 
       - name: Build static export
-        # Project pages live at /<repo>, so the app must be built with that
-        # basePath. For a user page (<user>.github.io) or a custom domain served
-        # from the root, set the repo Variable USE_ROOT_BASE_PATH=true.
+        # The site is served from the ROOT of the custom domain
+        # (https://kleszcz-radar.veloscope.me), so no basePath. To temporarily
+        # go back to project-pages URLs (<user>.github.io/<repo>), set the repo
+        # Variable USE_REPO_BASE_PATH=true.
         run: |
-          if [ "${{ vars.USE_ROOT_BASE_PATH }}" = "true" ]; then
-            export NEXT_PUBLIC_BASE_PATH=""
-          else
+          if [ "${{ vars.USE_REPO_BASE_PATH }}" = "true" ]; then
             export NEXT_PUBLIC_BASE_PATH="/${GITHUB_REPOSITORY#*/}"
+          else
+            export NEXT_PUBLIC_BASE_PATH=""
           fi
           echo "Building with basePath='$NEXT_PUBLIC_BASE_PATH'"
           npm run build
