@@ -114,6 +114,7 @@ export interface HeatmapResponse {
   window: HeatmapWindow;
   resolution: number; // effective H3 resolution of `cells` (3–7)
   minimumCellCount: number; // suppression threshold k
+  matchingReports: number; // reports matching filters/window, before the per-cell threshold
   totalReports: number; // all visible reports, country-wide (unfiltered)
   reportsLast24h: number; // of those, submitted in the last 24 hours
   cells: HeatmapCell[];

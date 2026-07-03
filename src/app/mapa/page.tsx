@@ -72,6 +72,29 @@ const WINDOW_RANGE_LABEL: Record<HeatmapWindow, string> = {
   season: "cały sezon " + new Date().getFullYear(),
 };
 
+/** Explains WHY the map is empty, based on what the API actually returned. */
+function emptyMapMessage(data: HeatmapResponse): string {
+  if (data.totalReports === 0) {
+    return "Nie ma jeszcze żadnych potwierdzonych zgłoszeń. Mapa wypełni się, gdy pojawią się pierwsze.";
+  }
+  if (data.matchingReports === 0) {
+    return "Żadne zgłoszenie nie pasuje do wybranych filtrów lub okresu. Zmień filtry, aby zobaczyć dane.";
+  }
+  const n = data.matchingReports;
+  const d = n % 10;
+  const h = n % 100;
+  const phrase =
+    n === 1
+      ? "jest 1 zgłoszenie"
+      : d >= 2 && d <= 4 && !(h >= 12 && h <= 14)
+        ? `są ${n.toLocaleString("pl-PL")} zgłoszenia`
+        : `jest ${n.toLocaleString("pl-PL")} zgłoszeń`;
+  return (
+    `W tym widoku ${phrase}, ale żaden obszar nie osiągnął progu prywatności ` +
+    `(min. ${data.minimumCellCount} zgłoszeń w jednej okolicy), więc dane pozostają ukryte.`
+  );
+}
+
 /** Polish plural form for "kleszcz" after a number. */
 function kleszczeForm(n: number): string {
   if (n === 1) return "kleszcza";
@@ -176,10 +199,9 @@ export default function HeatmapPage() {
             </div>
           ) : null}
 
-          {!loading && !error && !hasCells ? (
+          {!loading && !error && !hasCells && data ? (
             <div className="absolute inset-x-4 top-1/2 z-[1] -translate-y-1/2 rounded-xl2 bg-white/92 px-4 py-3 text-center text-[13px] font-medium leading-[1.5] text-muted shadow-sm">
-              Za mało zgłoszeń w tym widoku, aby bezpiecznie pokazać dane.
-              Obszary poniżej progu prywatności są ukrywane.
+              {emptyMapMessage(data)}
             </div>
           ) : null}
 

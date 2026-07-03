@@ -98,6 +98,31 @@ export function HeatmapMap({
           "line-opacity": 0.7,
         },
       });
+      // Tap a hexagon to see its (bucketed) report count. Counts are shown as
+      // "≈ N+", matching the privacy model — exact numbers are never exposed.
+      map.on("click", "risk-fill", (e) => {
+        const feature = e.features?.[0];
+        if (!feature) return;
+        const bucket = Number(feature.properties?.count ?? 0);
+        const intensity = String(feature.properties?.intensity ?? "low");
+        const intensityLabel =
+          intensity === "high" ? "wysokie" : intensity === "medium" ? "podwyższone" : "niskie";
+        new maplibregl.Popup({ closeButton: false, maxWidth: "220px" })
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `<div style="font: 600 13px/1.4 system-ui, sans-serif; color: #253830; padding: 2px 4px;">` +
+              `≈ ${bucket}+ zgłoszeń w tym obszarze<br/>` +
+              `<span style="font-weight: 500; color: #5c6f66;">ryzyko: ${intensityLabel}</span>` +
+              `</div>`,
+          )
+          .addTo(map);
+      });
+      map.on("mouseenter", "risk-fill", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "risk-fill", () => {
+        map.getCanvas().style.cursor = "";
+      });
       loadedRef.current = true;
       updateData(map, cells, didFitRef);
     });
