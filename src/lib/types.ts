@@ -92,6 +92,10 @@ export interface HeatmapQuery {
   window?: HeatmapWindow;
   placeType?: PlaceType;
   subjectType?: SubjectType;
+  // Requested H3 aggregation resolution (coarse 3 … fine 7). Wide map views
+  // should request coarser cells so areas accumulate enough reports to clear
+  // the privacy threshold. Server clamps to its allowed range.
+  resolution?: number;
   // Optional bounding box — all four must be provided together.
   north?: number;
   south?: number;
@@ -100,7 +104,7 @@ export interface HeatmapQuery {
 }
 
 export interface HeatmapCell {
-  cell: string; // H3 index (resolution 7)
+  cell: string; // H3 index (at HeatmapResponse.resolution)
   countBucket: number; // bucketed count (multiples of 5)
   intensity: Intensity;
 }
@@ -108,7 +112,7 @@ export interface HeatmapCell {
 export interface HeatmapResponse {
   generatedAt: string; // ISO
   window: HeatmapWindow;
-  resolution: number; // 7
+  resolution: number; // effective H3 resolution of `cells` (3–7)
   minimumCellCount: number; // suppression threshold k
   cells: HeatmapCell[];
 }

@@ -27,10 +27,20 @@ function toFeatureCollection(cells: HeatmapCell[]): FeatureCollection<Polygon> {
 }
 
 /** Renders aggregated H3 risk cells as coloured hexagons. Never any point pins. */
-export function HeatmapMap({ cells }: { cells: HeatmapCell[] }) {
+export function HeatmapMap({
+  cells,
+  onZoomChange,
+}: {
+  cells: HeatmapCell[];
+  /** Called with the map zoom on load and after every zoom gesture. */
+  onZoomChange?: (zoom: number) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const loadedRef = useRef(false);
+  const didFitRef = useRef(false);
+  const onZoomChangeRef = useRef(onZoomChange);
+  onZoomChangeRef.current = onZoomChange;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -42,7 +52,9 @@ export function HeatmapMap({ cells }: { cells: HeatmapCell[] }) {
       attributionControl: { compact: true },
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.on("zoomend", () => onZoomChangeRef.current?.(map.getZoom()));
     map.on("load", () => {
+      onZoomChangeRef.current?.(map.getZoom());
       map.addSource(SOURCE_ID, {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -87,7 +99,7 @@ export function HeatmapMap({ cells }: { cells: HeatmapCell[] }) {
         },
       });
       loadedRef.current = true;
-      updateData(map, cells);
+      updateData(map, cells, didFitRef);
     });
     mapRef.current = map;
 
@@ -101,7 +113,7 @@ export function HeatmapMap({ cells }: { cells: HeatmapCell[] }) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map && loadedRef.current) updateData(map, cells);
+    if (map && loadedRef.current) updateData(map, cells, didFitRef);
   }, [cells]);
 
   return (
@@ -115,12 +127,15 @@ export function HeatmapMap({ cells }: { cells: HeatmapCell[] }) {
   );
 }
 
-function updateData(map: MlMap, cells: HeatmapCell[]) {
+function updateData(map: MlMap, cells: HeatmapCell[], didFitRef: { current: boolean }) {
   const fc = toFeatureCollection(cells);
   const source = map.getSource(SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
   source?.setData(fc);
 
-  if (cells.length > 0) {
+  // Auto-fit only on the first non-empty payload. Later refetches (filter or
+  // zoom-resolution changes) must not fight the user's current viewport.
+  if (cells.length > 0 && !didFitRef.current) {
+    didFitRef.current = true;
     const bounds = new LngLatBounds();
     fc.features.forEach((f) =>
       f.geometry.coordinates[0].forEach(([lng, lat]) => bounds.extend([lng, lat])),

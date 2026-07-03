@@ -151,6 +151,7 @@ export function getHeatmap(query: HeatmapQuery = {}): Promise<HeatmapResponse> {
   if (query.window) params.set("window", query.window);
   if (query.placeType) params.set("placeType", query.placeType);
   if (query.subjectType) params.set("subjectType", query.subjectType);
+  if (query.resolution !== undefined) params.set("resolution", String(query.resolution));
   const bbox = [query.north, query.south, query.east, query.west];
   if (bbox.every((v) => typeof v === "number")) {
     params.set("north", String(query.north));

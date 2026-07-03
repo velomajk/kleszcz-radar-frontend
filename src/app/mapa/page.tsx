@@ -52,6 +52,19 @@ const WHO_FILTERS: { key: SubjectType | "all"; label: string }[] = [
   { key: "animal", label: "Zwierzę" },
 ];
 
+/**
+ * Maps the maplibre zoom level to an H3 aggregation resolution. Wide views use
+ * coarse cells so regions accumulate enough reports to clear the privacy
+ * threshold; zooming in progressively refines the grid (server clamps to its
+ * own limits).
+ */
+function zoomToResolution(zoom: number): number {
+  if (zoom < 6) return 4; // whole country
+  if (zoom < 7.5) return 5; // województwo
+  if (zoom < 9) return 6; // powiat
+  return 7; // local (native storage resolution)
+}
+
 const WINDOW_RANGE_LABEL: Record<HeatmapWindow, string> = {
   "7d": "ostatnie 7 dni",
   "14d": "ostatnie 14 dni",
@@ -74,6 +87,7 @@ export default function HeatmapPage() {
   const [window_, setWindow] = useState<HeatmapWindow>("7d");
   const [place, setPlace] = useState<PlaceType | "all">("all");
   const [who, setWho] = useState<SubjectType | "all">("all");
+  const [resolution, setResolution] = useState(zoomToResolution(5.4));
 
   const [data, setData] = useState<HeatmapResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +99,7 @@ export default function HeatmapPage() {
     setError("");
     getHeatmap({
       window: window_,
+      resolution,
       ...(place !== "all" ? { placeType: place } : {}),
       ...(who !== "all" ? { subjectType: who } : {}),
     })
@@ -100,7 +115,7 @@ export default function HeatmapPage() {
     return () => {
       cancelled = true;
     };
-  }, [window_, place, who]);
+  }, [window_, place, who, resolution]);
 
   const stats = useMemo(() => {
     if (!data) return null;
@@ -137,7 +152,10 @@ export default function HeatmapPage() {
 
         {/* Map */}
         <div className="relative mx-4 h-[300px] overflow-hidden rounded-[18px] border border-map-border bg-map-bg">
-          <HeatmapMap cells={data?.cells ?? []} />
+          <HeatmapMap
+            cells={data?.cells ?? []}
+            onZoomChange={(zoom) => setResolution(zoomToResolution(zoom))}
+          />
 
           <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-full bg-white/85 px-[11px] py-[5px] text-[11.5px] font-semibold text-[#4A574F]">
             {WINDOW_RANGE_LABEL[window_]}
